@@ -1,9 +1,11 @@
 <script lang="ts">
     import { symbolsData } from "$lib/store";
     import { get } from "svelte/store";
+    import { generateSet } from "$lib/lib";
 
     let { n, s, symbols } = get(symbolsData) as any;
     let prevOpt: any, nextOpt: any, possible: boolean;
+    let set: number[][];
 
     const readFileAsDataURL = (f: File) => {
         return new Promise((resolve, reject) => {
@@ -37,7 +39,7 @@
                     name: f.name,
                     src: data
                 }];
-                generateCards();
+                determineOptions();
             } catch (error) {
                 console.log(`Fehler: ${error}`);
                 continue;
@@ -78,15 +80,27 @@
         const { target } = ev;
         
         const index = Array.prototype.indexOf.call(dragDropArea?.children, target);
-        console.log(index);
 
         symbols.splice(index, 1);
         symbols = symbols;
 
-        generateCards();
+        determineOptions();
     };
 
-    const generateCards = () => {
+    const btnClickHandler = async (ev: Event) => {
+        if (prevOpt) {
+            set = generateSet(prevOpt.n, prevOpt.s);
+        } else {
+            set = generateSet(n, s);
+        }
+
+        const { jspdf, html2canvas } = window as any;
+        const { jsPDF } = jspdf;
+
+        // generate pdfs here
+    };
+
+    const determineOptions = () => {
         n = symbols.length;
         s = (1 + Math.sqrt(4 * n - 3)) / 2;
 
@@ -125,7 +139,7 @@
         });
     };
 
-    generateCards();
+    determineOptions();
 </script>
 
 <h2>Symbole</h2>
@@ -167,7 +181,7 @@
         </p>
     {:else}
         {#if possible}
-            <button id="button-generate-pdf">
+            <button id="button-generate-pdf" on:click={btnClickHandler}>
                 PDF erstellen
             </button>
 
@@ -175,10 +189,9 @@
                 mit {n} Karten und {s} Symbolen pro Karte.
             </p>
         {:else}
-            <button id="button-generate-pdf">
+            <button id="button-generate-pdf" on:click={btnClickHandler}>
                 PDF erstellen
             </button>
-        
             
             <p>
                 Wichtig: Die letzte(n) {prevOpt.unnecessary} Karte(n) werden ignoriert, um {prevOpt.n} Karten mit {prevOpt.s} Symbolen pro Karte zu erstellen!
