@@ -1,0 +1,86 @@
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+    font: inherit;
+}
+
+body {
+    color: black;
+    font-family: sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, p, label, li {
+    display: block;
+    margin-top: .7rem;
+    margin-bottom: .7rem;
+
+    line-height: 1.2rem;
+}
+
+
+html {
+    font-size: 17px;
+}
+
+h1 {
+    font-size: 1.5em;
+    margin-bottom: .5rem;
+}
+h2 {
+    font-size: 1.2em;
+    margin-bottom: 1.2rem;
+}
+h3, h4, h5, h6 {
+    font-size: 1em;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.input-file, button {
+    display: inline-block;
+    padding: .5rem;
+    border-radius: 5px;
+    border: none;
+    user-select: none;
+}
+
+.input-file {
+    background: rgb(66, 117, 194);
+    color: white;
+}
+.input-file:hover {
+    background: rgb(53, 95, 158);
+}
+
+button {
+    background: rgb(24, 180, 24);
+    color: white;
+}
+button:hover {
+    background: rgb(20, 143, 20);
+}
+
+.input-file:active, button:active {
+    outline: 2px solid rgb(94, 94, 94);
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+}
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #000;
+}
+.separator:not(:empty)::before {
+    margin-right: .25rem;
+}
+.separator:not(:empty)::after {
+    margin-left: .25rem;
+}
