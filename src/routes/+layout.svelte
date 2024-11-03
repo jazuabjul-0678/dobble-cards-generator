@@ -24,6 +24,8 @@
     </div>
 </main>
 
+<div id="background-pane"></div>
+
 <style>
     header {
         position: fixed;
@@ -74,5 +76,15 @@
 
     #content {
         padding: .5rem;
+    }
+
+    #background-pane {
+        background: white;
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        right: 0px;
+        bottom: 0px;
+        z-index: -1;
     }
 </style>

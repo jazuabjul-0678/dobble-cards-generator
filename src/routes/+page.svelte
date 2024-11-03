@@ -1,11 +1,14 @@
 <script lang="ts">
-    import { symbolsData } from "$lib/store";
+    import { pdfChildren, symbolsData } from "$lib/store";
     import { get } from "svelte/store";
     import { generateSet } from "$lib/lib";
 
     let { n, s, symbols } = get(symbolsData) as any;
     let prevOpt: any, nextOpt: any, possible: boolean;
     let set: number[][];
+
+    let pdfPromise: any = null, pdfShowHTML = false;
+    let uniqueID = 0;
 
     const readFileAsDataURL = (f: File) => {
         return new Promise((resolve, reject) => {
@@ -88,16 +91,119 @@
     };
 
     const btnClickHandler = async (ev: Event) => {
+        pdfShowHTML = true;
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
         if (prevOpt) {
             set = generateSet(prevOpt.n, prevOpt.s);
         } else {
+            console.log(n, s);
             set = generateSet(n, s);
         }
 
-        const { jspdf, html2canvas } = window as any;
-        const { jsPDF } = jspdf;
+        pdfPromise = new Promise(async (resolve) => {
+            try {
+                const { jspdf, html2canvas } = window as any;
+                const { jsPDF } = jspdf;
 
-        // generate pdfs here
+                const element = document.querySelector("#pdf-content");
+                {
+                    set.forEach(async (c, i) => {
+                        i ++;
+                        let card = {
+                            id: uniqueID ++,
+                            styles: {
+                                border: "1px solid black",
+                                display: "inline-flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                width: "calc((210mm - 2 * 10mm - 5mm / 4) / 2)",
+                                height: "calc((210mm - 2 * 10mm - 5mm / 4) / 2)",
+                                borderRadius: "50%"
+                            },
+                            content: ""
+                        };
+
+                        c.forEach((index) => {
+                            card.content = card.content + `
+                                <img src=\"${symbols[index].src}\" height=\"50px\">
+                            `;
+                        });
+
+                        pdfChildren.update((current: any) => [...current, card]);
+
+                        if (i % 6 === 0) {
+                            let gap = {
+                                id: uniqueID ++,
+                                styles: {
+                                    border: "",
+                                    display: "block",
+                                    justifyContent: "",
+                                    alignItems: "",
+                                    width: "100%",
+                                    height: "calc(297mm - 3 * ((210mm - 2 * 10mm - 5mm / 4) / 2) - 2 * 5mm)",
+                                    borderRadius: ""
+                                },
+                                content: ""
+                            };
+
+                            pdfChildren.update((current: any) => [...current, gap]);
+                        } else if (i % 2 === 0) {
+                            let gap = {
+                                id: uniqueID ++,
+                                styles: {
+                                    border: "",
+                                    display: "block",
+                                    justifyContent: "",
+                                    alignItems: "",
+                                    width: "100%",
+                                    height: "5mm",
+                                    borderRadius: ""
+                                },
+                                content: ""
+                            };
+
+                            pdfChildren.update((current: any) => [...current, gap]);
+                        }
+                    });
+                }
+
+                const a4Width = 210;
+                const a4Height = 297;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                try {
+                    const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, logging: true });
+                    pdfShowHTML = false;
+                    element!.innerHTML = "";
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = a4Width;
+                    const imgHeight = (canvas.height * a4Width) / canvas.width;
+                
+                    let yPosition = 0;
+                    const pageHeight = a4Height;
+                
+                    while (yPosition < imgHeight) {
+                        pdf.addImage(imgData, 'PNG', 0, -yPosition, imgWidth, imgHeight);
+                        yPosition += pageHeight;
+                        if (yPosition < imgHeight) {
+                            pdf.addPage();
+                        }
+                    }
+
+                    pdf.save('document.pdf');
+                } catch (error) {
+                    console.log(`Fehler: ${error}`);
+                }
+            } catch (error) {
+                console.log(`Fehler: ${error}`);
+            }
+            
+            resolve("");
+        });
     };
 
     const determineOptions = () => {
@@ -129,6 +235,8 @@
                     s: next_s,
                     required: Math.abs(next_n - n)
                 };
+            } else {
+                prevOpt = null;
             }
         }
 
@@ -180,19 +288,23 @@
             Noch {nextOpt.required} Symbol(e) gebraucht, um {nextOpt.n} Karten mit {nextOpt.s} Symbolen pro Karte zu erstellen.
         </p>
     {:else}
-        {#if possible}
-            <button id="button-generate-pdf" on:click={btnClickHandler}>
+        <button id="button-generate-pdf" on:click={btnClickHandler}>
+            {#if pdfPromise}
+                {#await pdfPromise}
+                    Wird erstellt ...
+                {:then _} 
+                    PDF erstellen
+                {/await}
+            {:else}
                 PDF erstellen
-            </button>
+            {/if}
+        </button>
+        {#if possible}
 
             <p>
                 mit {n} Karten und {s} Symbolen pro Karte.
             </p>
         {:else}
-            <button id="button-generate-pdf" on:click={btnClickHandler}>
-                PDF erstellen
-            </button>
-            
             <p>
                 Wichtig: Die letzte(n) {prevOpt.unnecessary} Karte(n) werden ignoriert, um {prevOpt.n} Karten mit {prevOpt.s} Symbolen pro Karte zu erstellen!
             </p>
@@ -207,6 +319,16 @@
         {/if}
     {/if}
 </div>
+
+{#if pdfShowHTML}
+    <div id="pdf-content">
+        {#each $pdfChildren as child (child.id)}
+            <div style="border: {child.styles.border}; border-radius: {child.styles.borderRadius}; display: {child.styles.display}; justify-content: {child.styles.justifyContent}; align-items: {child.styles.alignItems}; width: {child.styles.width}; height: {child.styles.height}; borderRadius: {child.styles.borderRadius}">
+                {@html child.content}
+            </div>
+        {/each}
+    </div>
+{/if}
 
 <style>
     #drag-and-drop-symbols {
@@ -236,5 +358,14 @@
 
     #button-generate-pdf {
         width: 100%;
+    }
+
+    #pdf-content {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 210mm;
+        padding: calc((297mm - 3 * calc((210mm - 2 * 10mm - 5mm / 4) / 2) - 2 * 5mm) / 2) 10mm;
+        z-index: -2;
     }
 </style>

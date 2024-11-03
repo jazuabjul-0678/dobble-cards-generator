@@ -5,3 +5,4 @@ export let symbolsData = writable({
     n: 0,
     s: 0
 });
+export let pdfChildren: any = writable([]);
