@@ -6,3 +6,8 @@ export let symbolsData = writable({
     s: 0
 });
 export let pdfChildren: any = writable([]);
+export let settings: any = writable({
+    zoom: 1,
+    doRotate: true,
+    doScale: true
+});

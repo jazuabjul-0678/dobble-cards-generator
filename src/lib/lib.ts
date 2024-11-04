@@ -32,3 +32,19 @@ export const generateSet = (n: number, s: number): number[][] => {
 
     return set;
 };
+
+export const deg_to_rad = (deg: number) => {
+    const pi = Math.PI;
+    return deg * (pi / 180);
+};
+
+export const scaleImageToFitCircle = (width: number, height: number, radius: number) => {
+    const diameter = radius;
+
+    const scaleFactor = Math.min(diameter / width, diameter / height);
+
+    const newWidth = Math.round(width * scaleFactor);
+    const newHeight = Math.round(height * scaleFactor);
+
+    return { newWidth, newHeight };
+};

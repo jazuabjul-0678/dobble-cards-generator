@@ -1,11 +1,16 @@
 <script lang="ts">
     import "../styles.css";
     import { page } from "$app/stores";
+    import { settings } from "$lib/store";
 
     const links: any[] = [
         { name: "Hauptseite", path: "/" },
         { name: "Einstellungen", path: "/settings" }
     ];
+
+    $: if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty("--zoom-level", $settings.zoom);
+    }
 </script>
 
 <header>

@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { pdfChildren, symbolsData } from "$lib/store";
+    import { pdfChildren, symbolsData, settings } from "$lib/store";
     import { get } from "svelte/store";
-    import { generateSet } from "$lib/lib";
+    import { deg_to_rad, generateSet, scaleImageToFitCircle } from "$lib/lib";
 
     let { n, s, symbols } = get(symbolsData) as any;
     let prevOpt: any, nextOpt: any, possible: boolean;
@@ -9,6 +9,8 @@
 
     let pdfPromise: any = null, pdfShowHTML = false;
     let uniqueID = 0;
+
+    let { doRotate, doScale } = get(settings) as any;
 
     const readFileAsDataURL = (f: File) => {
         return new Promise((resolve, reject) => {
@@ -98,7 +100,6 @@
         if (prevOpt) {
             set = generateSet(prevOpt.n, prevOpt.s);
         } else {
-            console.log(n, s);
             set = generateSet(n, s);
         }
 
@@ -115,9 +116,8 @@
                             id: uniqueID ++,
                             styles: {
                                 border: "1px solid black",
-                                display: "inline-flex",
-                                justifyContent: "center",
-                                alignItems: "center",
+                                position: "relative",
+                                display: "inline-block",
                                 width: "calc((210mm - 2 * 10mm - 5mm / 4) / 2)",
                                 height: "calc((210mm - 2 * 10mm - 5mm / 4) / 2)",
                                 borderRadius: "50%"
@@ -125,10 +125,50 @@
                             content: ""
                         };
 
-                        c.forEach((index) => {
+                        let angle = 0;
+                        c.forEach((index, i) => {
+                            const circle = document.createElement("div");
+                            circle.style.borderRadius = "50%";
+                            circle.style.position = "absolute";
+                            circle.style.top = "50%";
+                            circle.style.left = "50%";
+                            circle.style.display = "flex";
+                            circle.style.justifyContent = "center";
+                            circle.style.alignItems = "center";
+                            circle.style.transformOrigin = "50% 50%";
+                            circle.style.width = "100px";
+                            circle.style.height = "100px";
+
+                            const scale = (doScale) ? 0.8 + Math.random() * (2 / 10) : 1.0;
+
+                            const image = new Image();
+                            image.src = symbols[index].src;
+                            const { width, height } = image;
+                            const { newWidth, newHeight } = scaleImageToFitCircle(width, height, 75 * scale);
+
+                            const img = document.createElement("img");
+                            img.width = newWidth;
+                            img.height = newHeight;
+                            img.src = image.src;
+
+                            const distance = 120 - (20 * (6 / (s)));
+                            const x = Math.sin(deg_to_rad(angle)) * distance;
+                            const y = Math.cos(deg_to_rad(angle)) * distance;
+
+                            circle.style.transform = `translateX(calc(-50% + ${x}px)) translateY(calc(-50% + ${-y}px)) scale(${scale})`;
+
+                            if (doRotate) {
+                                const rotation = 360 * Math.random();
+                                circle.style.transform = circle.style.transform + ` rotateZ(${rotation}deg)`;
+                            }
+
+                            circle.appendChild(img);
+
                             card.content = card.content + `
-                                <img src=\"${symbols[index].src}\" height=\"50px\">
-                            `;
+                                <img src=\"${symbols[index].src}\" style=\"opacity: 0\" height=\"50px\">
+                            ` + circle.outerHTML;
+
+                            angle = (i + 1) * (360 / s);
                         });
 
                         pdfChildren.update((current: any) => [...current, card]);
@@ -138,9 +178,8 @@
                                 id: uniqueID ++,
                                 styles: {
                                     border: "",
+                                    position: "",
                                     display: "block",
-                                    justifyContent: "",
-                                    alignItems: "",
                                     width: "100%",
                                     height: "calc(297mm - 3 * ((210mm - 2 * 10mm - 5mm / 4) / 2) - 2 * 5mm)",
                                     borderRadius: ""
@@ -154,9 +193,8 @@
                                 id: uniqueID ++,
                                 styles: {
                                     border: "",
+                                    position: "",
                                     display: "block",
-                                    justifyContent: "",
-                                    alignItems: "",
                                     width: "100%",
                                     height: "5mm",
                                     borderRadius: ""
@@ -195,6 +233,8 @@
                     }
 
                     pdf.save('document.pdf');
+
+                    window.location.reload();
                 } catch (error) {
                     console.log(`Fehler: ${error}`);
                 }
@@ -253,7 +293,7 @@
 <h2>Symbole</h2>
 
 <p>
-    Unterstützt werden alle Bild-Datei-Formate.
+    Unterstützt werden alle Bild-Datei-Formate, außer .svg.
 </p>
 
 <div id="drag-and-drop-symbols" on:drop={dropHandler} on:dragover={dragoverHandler} aria-hidden="true">
@@ -273,12 +313,12 @@
     {/if}
 </div>
 
-<p>Anzahl an Symbolen: <b>{n}</b></p>
+<p>Anzahl an Symbolen: <b>{n}</b><br><b>Maximal: 57</b></p>
 
 <label class="input-file" for="input-file-symbols">Symbole hochladen</label>
 <input id="input-file-symbols" multiple type="file" on:change={changeHandler}>
 
-<br>
+<br><br>
 
 <h2>Karten erstellen</h2>
 
@@ -323,7 +363,7 @@
 {#if pdfShowHTML}
     <div id="pdf-content">
         {#each $pdfChildren as child (child.id)}
-            <div style="border: {child.styles.border}; border-radius: {child.styles.borderRadius}; display: {child.styles.display}; justify-content: {child.styles.justifyContent}; align-items: {child.styles.alignItems}; width: {child.styles.width}; height: {child.styles.height}; borderRadius: {child.styles.borderRadius}">
+            <div style="border: {child.styles.border}; border-radius: {child.styles.borderRadius}; display: {child.styles.display}; position: {child.styles.position}; width: {child.styles.width}; height: {child.styles.height}; borderRadius: {child.styles.borderRadius}">
                 {@html child.content}
             </div>
         {/each}
@@ -344,6 +384,7 @@
         border: 1px solid rgb(66, 117, 194);
         
         margin: .5rem;
+        cursor: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAEZSURBVEhL7dbNDYJAEAVgurAGLWNDaIIKOFMITWHAAvSqHjxzNNEYnUd2EgPsH8zKxZdMDOvOfMSLk/yzapo03VLtG6U2+ig46KUZdavUTh/ZA7TNsu6U50/6vM7B0XPIsoue0WGm/mo6jN7K8nWvqve5KB6hOKPoxQzMcuIt/bxHeks0cIXgQ5QLMzFbXxsHjUCGjT64CfV+cRuOwVMDFqOcEFwM5fjg4ijHNhjnUVCODY+Gckz4d4mjHBseDUVWgW0olzhuQvE8dSaC21AAKHHcheJ7lCjug+qr/V0TjhneeAjKWYzPQTmLcPqzrrGuDBtdKMf04v0KRLP1tXGwmBEivvrQc+dc+qSXPS+UA5zqt+vtP3GSJB8dMjDEDq+o8wAAAABJRU5ErkJggg==), auto;
     }
 
     #possible-sets {
