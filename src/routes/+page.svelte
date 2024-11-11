@@ -120,10 +120,19 @@
                                 display: "inline-block",
                                 width: "calc((210mm - 2 * 10mm - 5mm / 4) / 2)",
                                 height: "calc((210mm - 2 * 10mm - 5mm / 4) / 2)",
-                                borderRadius: "50%"
+                                borderRadius: "50%",
+                                transform: ""
                             },
                             content: ""
                         };
+
+                        if (i % 2 === 0) {
+                            console.log("2");
+                            card.styles.transform = "translateX(2mm)";
+                        } else {
+                            console.log("1");
+                            card.styles.transform = "translateX(-2mm)";
+                        }
 
                         let angle = 0;
                         c.forEach((index, i) => {
@@ -215,8 +224,6 @@
 
                 try {
                     const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, logging: true });
-                    pdfShowHTML = false;
-                    element!.innerHTML = "";
                     const imgData = canvas.toDataURL('image/png');
                     const imgWidth = a4Width;
                     const imgHeight = (canvas.height * a4Width) / canvas.width;
@@ -234,7 +241,7 @@
 
                     pdf.save('document.pdf');
 
-                    window.location.reload();
+                    // window.location.reload();
                 } catch (error) {
                     console.log(`Fehler: ${error}`);
                 }
@@ -363,7 +370,7 @@
 {#if pdfShowHTML}
     <div id="pdf-content">
         {#each $pdfChildren as child (child.id)}
-            <div style="border: {child.styles.border}; border-radius: {child.styles.borderRadius}; display: {child.styles.display}; position: {child.styles.position}; width: {child.styles.width}; height: {child.styles.height}; borderRadius: {child.styles.borderRadius}">
+            <div style="border: {child.styles.border}; border-radius: {child.styles.borderRadius}; display: {child.styles.display}; position: {child.styles.position}; width: {child.styles.width}; height: {child.styles.height}; borderRadius: {child.styles.borderRadius}; transform: {child.styles.transform}">
                 {@html child.content}
             </div>
         {/each}
