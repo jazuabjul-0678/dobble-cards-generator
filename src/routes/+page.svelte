@@ -249,6 +249,8 @@
                 console.log(`Fehler: ${error}`);
             }
             
+            pdfChildren.set(["a"]);
+
             resolve("");
         });
     };
